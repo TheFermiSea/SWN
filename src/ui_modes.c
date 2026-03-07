@@ -31,18 +31,35 @@
 #include "key_combos.h"
 #include "params_update.h"
 #include "led_cont.h"
-#include "wavetable_editing.h" 
-#include "wavetable_saveload.h" 
+#include "wavetable_editing.h"
+#include "wavetable_saveload.h"
 #include "UI_conditioning.h"
 #include "calibrate_voct.h"
 #include "flash_params.h"
 
+extern void check_chaos_button_combo(uint8_t lfo_type_just_pressed, uint8_t fine_is_held);
+
 enum 	UI_Modes ui_mode;
 
 void check_ui_mode_requests(void){
-	
+
 	static enum 	UI_Modes arm_ui;
 	static uint8_t	flag=0;
+
+	// Chaos mode button combo: LFO Mode button + Fine switch
+	{
+		static uint8_t prev_combo = 0;
+		uint8_t lfo_pressed = button_pressed(butm_LFOMODE_BUTTON) ? 1 : 0;
+		uint8_t fine_held = switch_pressed(FINE_BUTTON);
+		uint8_t combo = lfo_pressed && fine_held;
+		uint8_t just_activated = combo && !prev_combo;
+		prev_combo = combo;
+
+		check_chaos_button_combo(just_activated, fine_held);
+		if (just_activated && fine_held) {
+			return;
+		}
+	}
 
 	if (ui_mode == PLAY){
 		if 		(key_combo_enter_editing())			{ arm_ui = WTEDITING;}

@@ -53,6 +53,8 @@ extern o_systemSettings system_settings;
 extern o_analog analog[NUM_ANALOG_ELEMENTS];
 extern enum UI_Modes ui_mode;
 
+extern uint8_t process_chaos_lfos(void);
+
 o_lfos   lfos;
 uint16_t divmult_cv;
 
@@ -60,6 +62,11 @@ uint16_t divmult_cv;
 
 void update_lfos(void)
 {
+	// Run chaos math. If it returns 1, chaos mode is active and handled the LFO frame.
+	if (process_chaos_lfos()) {
+		return;
+	}
+
 	update_lfo_params();
 	read_ext_clk();
 	update_lfo_calcs();
