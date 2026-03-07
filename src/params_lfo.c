@@ -88,7 +88,7 @@ void update_lfos(void)
 			static uint8_t freeze_was_pressed = 0;
 			uint8_t pressed = rotary_pressed(rotm_LFOSHAPE);
 			if (pressed && !freeze_was_pressed) {
-				chaos_frozen = !chaos_frozen;
+				chaos_toggle_freeze();
 			}
 			freeze_was_pressed = pressed;
 		}
