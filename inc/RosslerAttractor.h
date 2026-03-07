@@ -19,6 +19,10 @@ struct RosslerAttractor {
         float dy = x + (a * y);
         float dz = b + z * (x - c);
         x += dx * dt; y += dy * dt; z += dz * dt;
+        // Prevent divergence to NaN/Inf
+        x = MathHelpers::clamp(x, -100.0f, 100.0f);
+        y = MathHelpers::clamp(y, -100.0f, 100.0f);
+        z = MathHelpers::clamp(z, -100.0f, 100.0f);
     }
 
     void reset(float init_x = 0.1f, float init_y = 0.0f, float init_z = 0.0f) {

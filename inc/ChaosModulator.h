@@ -6,8 +6,8 @@
 
 class ChaosModulator {
 private:
-    LorenzAttractor lorenz[3];
-    RosslerAttractor rossler[3];
+    LorenzAttractor lorenz[2];
+    RosslerAttractor rossler[2];
     float channel_lorenz_mod[NUM_SWN_CHANNELS];
     float channel_rossler_mod[NUM_SWN_CHANNELS];
 
@@ -17,7 +17,7 @@ public:
     void processBlock(float speed_cv) {
         float dt = 0.0001f + (speed_cv * 0.02f);
 
-        for(int i=0; i<3; i++) {
+        for(int i=0; i<2; i++) {
             lorenz[i].step(dt);
             rossler[i].step(dt);
         }
@@ -38,7 +38,7 @@ public:
     }
 
     void resetAll() {
-        for(int i=0; i<3; i++) {
+        for(int i=0; i<2; i++) {
             lorenz[i].reset(0.1f + (float)i * 0.05f, 0.0f, 0.0f);
             rossler[i].reset(0.1f + (float)i * 0.05f, 0.0f, 0.0f);
         }

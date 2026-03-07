@@ -54,6 +54,7 @@ extern o_analog analog[NUM_ANALOG_ELEMENTS];
 extern enum UI_Modes ui_mode;
 
 extern uint8_t process_chaos_lfos(void);
+extern void chaos_adjust_speed(int16_t encoder_turn, uint8_t fine);
 
 o_lfos   lfos;
 uint16_t divmult_cv;
@@ -64,6 +65,9 @@ void update_lfos(void)
 {
 	// Run chaos math. If it returns 1, chaos mode is active and handled the LFO frame.
 	if (process_chaos_lfos()) {
+		// Still read LFO speed encoder in chaos mode for speed control
+		int16_t enc = pop_encoder_q(pec_LFOSPEED);
+		if (enc) chaos_adjust_speed(enc, switch_pressed(FINE_BUTTON));
 		return;
 	}
 
