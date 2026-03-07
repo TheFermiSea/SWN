@@ -37,7 +37,7 @@
 #include "calibrate_voct.h"
 #include "flash_params.h"
 
-extern void check_chaos_button_combo(uint8_t lfo_type_just_pressed, uint8_t fine_is_held);
+#include "chaos_interface.h"
 
 enum 	UI_Modes ui_mode;
 

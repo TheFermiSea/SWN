@@ -9,20 +9,23 @@ extern "C" {
 #include "envout_pwm.h"
 #include "ui_modes.h"
 #include "gpio_pins.h"
+#include "chaos_interface.h"
 }
 
+// Compile-time check: chaos channel mapping assumes NUM_CHANNELS == NUM_SWN_CHANNELS
+static_assert(NUM_CHANNELS == NUM_SWN_CHANNELS,
+    "NUM_CHANNELS and NUM_SWN_CHANNELS must match for chaos modulation routing");
+
 ChaosModulator chaosManager;
-extern volatile uint8_t current_chaos_mode;
-extern volatile uint8_t chaos_reset_pending;
+volatile uint8_t current_chaos_mode = 0;
+volatile uint8_t chaos_reset_pending = 0;
+volatile uint8_t chaos_frozen = 0;
 
 // Encoder-controlled parameters (midpoint defaults)
 static float chaos_speed_enc = 0.5f;
 static float chaos_character = 0.5f;
 static float chaos_spread = 0.0f;
 static float chaos_gain = 1.0f;
-
-// Freeze state: set by UI thread (encoder press), read by ISR
-volatile uint8_t chaos_frozen = 0;
 
 // Fade-in state for smooth transitions
 static float chaos_xfade = 0.0f;
@@ -31,7 +34,15 @@ static float chaos_xfade = 0.0f;
 static uint8_t prev_clk_state = 0;
 
 // Speed display notification flag (read by UI_Hook for outer ring display)
-static uint16_t chaos_speed_display_timer = 0;
+static volatile uint16_t chaos_speed_display_timer = 0;
+
+static void adjust_param(float *param, int16_t encoder_turn, uint8_t fine,
+                          float inc_fine, float inc_coarse) {
+    float inc = fine ? inc_fine : inc_coarse;
+    *param += encoder_turn * inc;
+    if (*param < 0.0f) *param = 0.0f;
+    if (*param > 1.0f) *param = 1.0f;
+}
 
 extern "C" {
 
@@ -39,47 +50,29 @@ extern o_lfos lfos;
 extern o_analog analog[NUM_ANALOG_ELEMENTS];
 extern enum UI_Modes ui_mode;
 
-// Called from params_lfo.c to adjust chaos speed via encoder
 void chaos_adjust_speed(int16_t encoder_turn, uint8_t fine) {
-    float inc = fine ? 0.01f : 0.05f;
-    chaos_speed_enc += encoder_turn * inc;
-    if (chaos_speed_enc < 0.0f) chaos_speed_enc = 0.0f;
-    if (chaos_speed_enc > 1.0f) chaos_speed_enc = 1.0f;
+    adjust_param(&chaos_speed_enc, encoder_turn, fine, 0.01f, 0.05f);
     chaos_speed_display_timer = 700;
 }
 
-// Called from params_lfo.c to adjust chaos character (turbulence) via encoder
 void chaos_adjust_character(int16_t encoder_turn, uint8_t fine) {
-    float inc = fine ? 0.005f : 0.03f;
-    chaos_character += encoder_turn * inc;
-    if (chaos_character < 0.0f) chaos_character = 0.0f;
-    if (chaos_character > 1.0f) chaos_character = 1.0f;
+    adjust_param(&chaos_character, encoder_turn, fine, 0.005f, 0.03f);
     chaosManager.setCharacter(chaos_character);
 }
 
-// Called from params_lfo.c to adjust instance spread via encoder
 void chaos_adjust_spread(int16_t encoder_turn, uint8_t fine) {
-    float inc = fine ? 0.01f : 0.05f;
-    chaos_spread += encoder_turn * inc;
-    if (chaos_spread < 0.0f) chaos_spread = 0.0f;
-    if (chaos_spread > 1.0f) chaos_spread = 1.0f;
+    adjust_param(&chaos_spread, encoder_turn, fine, 0.01f, 0.05f);
 }
 
-// Called from params_lfo.c to adjust chaos gain/depth via encoder
 void chaos_adjust_gain(int16_t encoder_turn, uint8_t fine) {
-    float inc = fine ? 0.01f : 0.05f;
-    chaos_gain += encoder_turn * inc;
-    if (chaos_gain < 0.0f) chaos_gain = 0.0f;
-    if (chaos_gain > 1.0f) chaos_gain = 1.0f;
+    adjust_param(&chaos_gain, encoder_turn, fine, 0.01f, 0.05f);
 }
 
-// Getters for UI_Hook.cpp LED display
 float chaos_get_speed(void) { return chaos_speed_enc; }
 uint16_t chaos_get_speed_display_timer(void) { return chaos_speed_display_timer; }
 void chaos_decrement_speed_display_timer(void) { if (chaos_speed_display_timer > 0) chaos_speed_display_timer--; }
 uint8_t chaos_is_frozen(void) { return chaos_frozen; }
 
-// Called from params_lfo.c
 uint8_t process_chaos_lfos(void) {
     uint8_t chaos_active = (current_chaos_mode != 0) && !UIMODE_IS_WT_RECORDING_EDITING(ui_mode);
 
@@ -120,20 +113,19 @@ uint8_t process_chaos_lfos(void) {
     }
 
     // Write chaos modulation into LFO preload buffer
+    uint8_t mode = current_chaos_mode;
     for (int i = 0; i < NUM_CHANNELS; i++) {
-        // Respect mute state
         if (lfos.muted[i]) {
             lfos.preload[i] = 0;
             continue;
         }
 
-        float mod_val = (current_chaos_mode == 1) ?
+        float mod_val = (mode == 1) ?
                         chaosManager.getLorenzModulation(i) :
                         chaosManager.getRosslerModulation(i);
 
         float chaos_val = mod_val * chaos_gain * (float)PWM_MAX;
 
-        // Apply fade for smooth transitions
         if (chaos_xfade < 1.0f) {
             chaos_val *= chaos_xfade;
         }
@@ -141,7 +133,7 @@ uint8_t process_chaos_lfos(void) {
         lfos.preload[i] = chaos_val;
     }
 
-    return 1; // Chaos handled the LFO frame
+    return 1;
 }
 
 } // extern "C"

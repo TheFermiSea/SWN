@@ -59,7 +59,7 @@
 #include "ui_modes.h"
 #include "wavetable_play_export.h"
 
-extern void override_chaos_leds(void);
+#include "chaos_interface.h"
 
 extern SystemCalibrations *system_calibrations;
 

@@ -53,12 +53,7 @@ extern o_systemSettings system_settings;
 extern o_analog analog[NUM_ANALOG_ELEMENTS];
 extern enum UI_Modes ui_mode;
 
-extern uint8_t process_chaos_lfos(void);
-extern void chaos_adjust_speed(int16_t encoder_turn, uint8_t fine);
-extern void chaos_adjust_character(int16_t encoder_turn, uint8_t fine);
-extern void chaos_adjust_spread(int16_t encoder_turn, uint8_t fine);
-extern void chaos_adjust_gain(int16_t encoder_turn, uint8_t fine);
-extern volatile uint8_t chaos_frozen;
+#include "chaos_interface.h"
 
 o_lfos   lfos;
 uint16_t divmult_cv;

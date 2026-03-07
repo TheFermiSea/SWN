@@ -7,16 +7,13 @@ extern "C" {
 #include "led_cont.h"
 #include "led_colors.h"
 #include "led_map.h"
+#include "chaos_interface.h"
 }
 
-// Global state: 0 = Factory, 1 = Lorenz, 2 = Rossler
-volatile uint8_t current_chaos_mode = 0;
-// ISR-safe reset flag: set by UI thread, consumed by ISR
-volatile uint8_t chaos_reset_pending = 0;
 extern ChaosModulator chaosManager;
 
 // Mode change flash counter for inner ring indicator
-static uint16_t mode_change_flash = 0;
+static volatile uint16_t mode_change_flash = 0;
 
 // Breathing counter for freeze indicator
 static float freeze_breath_phase = 0.0f;
@@ -25,27 +22,17 @@ extern "C" {
 
 extern o_led_cont led_cont;
 
-// Getters from Audio_Hook.cpp
-extern float chaos_get_speed(void);
-extern uint16_t chaos_get_speed_display_timer(void);
-extern void chaos_decrement_speed_display_timer(void);
-extern uint8_t chaos_is_frozen(void);
-
-// Called from ui_modes.c
 void check_chaos_button_combo(uint8_t lfo_type_just_pressed, uint8_t fine_is_held) {
     if (lfo_type_just_pressed && fine_is_held) {
         current_chaos_mode++;
         if (current_chaos_mode > 2) current_chaos_mode = 0;
 
-        // Request reset in ISR context to avoid race with processBlock()
         if (current_chaos_mode > 0) chaos_reset_pending = 1;
 
-        // Trigger inner ring flash for mode indication
         mode_change_flash = 500;
     }
 }
 
-// Called from led_cont.c
 void override_chaos_leds(void) {
     if (current_chaos_mode == 0 && mode_change_flash == 0) return;
 
@@ -66,7 +53,7 @@ void override_chaos_leds(void) {
             set_rgb_color(&led_cont.inring[i], flash_color);
         }
     }
-    // Persistent mode indicator: dim glow on inner ring LED 0
+    // Persistent mode indicator
     else if (current_chaos_mode != 0) {
         uint8_t frozen = chaos_is_frozen();
 
@@ -74,7 +61,6 @@ void override_chaos_leds(void) {
             // Freeze: all inner ring LEDs breathe in mode color
             freeze_breath_phase += 0.02f;
             if (freeze_breath_phase > 6.2832f) freeze_breath_phase -= 6.2832f;
-            // Simple sine approximation: use triangle wave for breathing
             float breath = freeze_breath_phase / 3.14159f;
             if (breath > 1.0f) breath = 2.0f - breath;
             if (breath < 0.0f) breath = 0.0f;
@@ -84,7 +70,6 @@ void override_chaos_leds(void) {
                 set_rgb_color_brightness(&led_cont.inring[i], mode_color, brightness);
             }
         } else {
-            // Normal: single dim LED as mode indicator
             set_rgb_color_brightness(&led_cont.inring[0], mode_color, 0.2f);
         }
     }
@@ -110,14 +95,11 @@ void override_chaos_leds(void) {
     }
 
     // Override array LEDs with chaos modulation values
+    uint8_t mode = current_chaos_mode;
     for (int i = 0; i < NUM_CHANNELS; i++) {
-        float val;
-
-        if (current_chaos_mode == 1) {
-            val = chaosManager.getLorenzModulation(i);
-        } else {
-            val = chaosManager.getRosslerModulation(i);
-        }
+        float val = (mode == 1) ?
+            chaosManager.getLorenzModulation(i) :
+            chaosManager.getRosslerModulation(i);
         set_rgb_color_brightness(&led_cont.array[i], mode_color, val);
     }
 }

@@ -52,6 +52,12 @@ public:
         }
     }
 
-    float getLorenzModulation(int channel) { return channel_lorenz_mod[channel]; }
-    float getRosslerModulation(int channel) { return channel_rossler_mod[channel]; }
+    float getLorenzModulation(int channel) {
+        if (channel < 0 || channel >= NUM_SWN_CHANNELS) return 0.0f;
+        return channel_lorenz_mod[channel];
+    }
+    float getRosslerModulation(int channel) {
+        if (channel < 0 || channel >= NUM_SWN_CHANNELS) return 0.0f;
+        return channel_rossler_mod[channel];
+    }
 };

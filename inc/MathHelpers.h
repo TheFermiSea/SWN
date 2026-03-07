@@ -8,6 +8,7 @@ namespace MathHelpers {
     }
 
     inline float normalize(float value, float min, float max) {
+        if (max <= min) return 0.0f;
         float mapped = (value - min) / (max - min);
         return clamp(mapped, 0.0f, 1.0f);
     }
