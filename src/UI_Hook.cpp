@@ -5,6 +5,7 @@ extern "C" {
 #include "led_cont.h"
 #include "led_colors.h"
 #include "led_map.h"
+#include "math_util.h"
 #include "chaos_interface.h"
 }
 
@@ -50,13 +51,10 @@ void override_chaos_leds(void) {
     // Persistent mode indicator
     else if (mode != CHAOS_OFF) {
         if (chaos_is_frozen()) {
-            // Breathing animation while frozen
+            // Breathing animation while frozen (triangle wave via _FOLD_F)
             freeze_breath_phase += CHAOS_BREATH_RATE;
-            if (freeze_breath_phase > 6.2832f) freeze_breath_phase -= 6.2832f;
-            float breath = freeze_breath_phase * 0.31831f; // 1/pi
-            if (breath > 1.0f) breath = 2.0f - breath;
-            if (breath < 0.0f) breath = 0.0f;
-            float brightness = CHAOS_BREATH_MIN + breath * CHAOS_BREATH_RANGE;
+            if (freeze_breath_phase > 2.0f) freeze_breath_phase -= 2.0f;
+            float brightness = CHAOS_BREATH_MIN + _FOLD_F(freeze_breath_phase, 1.0f) * CHAOS_BREATH_RANGE;
 
             for (int i = 0; i < NUM_LED_INRING; i++) {
                 set_rgb_color_brightness(&led_cont.inring[i], mode_color, brightness);
