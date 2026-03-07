@@ -55,6 +55,10 @@ extern enum UI_Modes ui_mode;
 
 extern uint8_t process_chaos_lfos(void);
 extern void chaos_adjust_speed(int16_t encoder_turn, uint8_t fine);
+extern void chaos_adjust_character(int16_t encoder_turn, uint8_t fine);
+extern void chaos_adjust_spread(int16_t encoder_turn, uint8_t fine);
+extern void chaos_adjust_gain(int16_t encoder_turn, uint8_t fine);
+extern volatile uint8_t chaos_frozen;
 
 o_lfos   lfos;
 uint16_t divmult_cv;
@@ -65,9 +69,35 @@ void update_lfos(void)
 {
 	// Run chaos math. If it returns 1, chaos mode is active and handled the LFO frame.
 	if (process_chaos_lfos()) {
-		// Still read LFO speed encoder in chaos mode for speed control
-		int16_t enc = pop_encoder_q(pec_LFOSPEED);
-		if (enc) chaos_adjust_speed(enc, switch_pressed(FINE_BUTTON));
+		int16_t enc;
+		uint8_t fine = switch_pressed(FINE_BUTTON);
+
+		// Speed: LFO Speed encoder
+		enc = pop_encoder_q(pec_LFOSPEED);
+		if (enc) chaos_adjust_speed(enc, fine);
+
+		// Character/turbulence: LFO Shape encoder (turn)
+		enc = pop_encoder_q(pec_LFOSHAPE);
+		if (enc) chaos_adjust_character(enc, fine);
+
+		// Spread: Phase encoder (secondary of Shape)
+		enc = pop_encoder_q(sec_LFOPHASE);
+		if (enc) chaos_adjust_spread(enc, fine);
+
+		// Gain/depth: Gain encoder
+		enc = pop_encoder_q(sec_LFOGAIN);
+		if (enc) chaos_adjust_gain(enc, fine);
+
+		// Freeze toggle: Shape encoder press
+		{
+			static uint8_t freeze_was_pressed = 0;
+			uint8_t pressed = rotary_pressed(rotm_LFOSHAPE);
+			if (pressed && !freeze_was_pressed) {
+				chaos_frozen = !chaos_frozen;
+			}
+			freeze_was_pressed = pressed;
+		}
+
 		return;
 	}
 

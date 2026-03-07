@@ -14,13 +14,14 @@ private:
 public:
     ChaosModulator() { resetAll(); }
 
-    void processBlock(float speed_cv) {
+    void processBlock(float speed_cv, float spread = 0.0f) {
         float dt = 0.0001f + (speed_cv * 0.02f);
+        float dt2 = dt * (1.0f + spread);
 
-        for(int i=0; i<2; i++) {
-            lorenz[i].step(dt);
-            rossler[i].step(dt);
-        }
+        lorenz[0].step(dt);
+        rossler[0].step(dt);
+        lorenz[1].step(dt2);
+        rossler[1].step(dt2);
 
         channel_lorenz_mod[0] = lorenz[0].getNormX();
         channel_lorenz_mod[1] = lorenz[0].getNormY();
@@ -41,6 +42,13 @@ public:
         for(int i=0; i<2; i++) {
             lorenz[i].reset(0.1f + (float)i * 0.05f, 0.0f, 0.0f);
             rossler[i].reset(0.1f + (float)i * 0.05f, 0.0f, 0.0f);
+        }
+    }
+
+    void setCharacter(float normalized_character) {
+        for (int i = 0; i < 2; i++) {
+            lorenz[i].setCharacter(normalized_character);
+            rossler[i].setCharacter(normalized_character);
         }
     }
 

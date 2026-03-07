@@ -29,6 +29,11 @@ struct RosslerAttractor {
         x = init_x; y = init_y; z = init_z;
     }
 
+    // normalized_character 0.0–1.0 maps c from 2.0 (periodic) to 18.0 (highly chaotic)
+    void setCharacter(float normalized_character) {
+        c = 2.0f + normalized_character * 16.0f;
+    }
+
     float getNormX() const { return MathHelpers::normalize(x, X_MIN, X_MAX); }
     float getNormY() const { return MathHelpers::normalize(y, Y_MIN, Y_MAX); }
     float getNormZ() const { return MathHelpers::normalize(z, Z_MIN, Z_MAX); }
