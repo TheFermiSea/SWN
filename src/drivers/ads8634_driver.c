@@ -526,12 +526,20 @@ void ads8634_set_vrange(uint8_t chipnum, enum RangeSel *v_ranges, uint8_t number
 
 	ads8634_create_vrange_buffer(padded_ranges);
 
-	while (chip[chipnum].status != READY_TO_TX) {;}
+	{
+		uint32_t timeout = 1000000UL;
+		while (chip[chipnum].status != READY_TO_TX) {
+			if (--timeout == 0) break;
+		}
+	}
 	chip[chipnum].status = NOT_READY_TO_TX;
 
-	for (i=0;i<MAX_ADCS_PER_CHIP;i++) 
+	for (i=0;i<MAX_ADCS_PER_CHIP;i++)
 	{
-		while (!(chip[chipnum].SPIx->SR & SPI_FLAG_TXE)) {;}
+		uint32_t timeout = 100000UL;
+		while (!(chip[chipnum].SPIx->SR & SPI_FLAG_TXE)) {
+			if (--timeout == 0) break;
+		}
 		chip[chipnum].SPIx->DR = reg_init_buffer[i];
 	}
 

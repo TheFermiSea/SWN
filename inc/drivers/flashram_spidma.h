@@ -73,6 +73,7 @@ enum sFlashErrors{
 	sFLASH_SPI_DMA_RX_ERROR = (1<<4),
 	sFLASH_SPI_DMA_TX_ERROR = (1<<5),
 	sFLASH_SPI_PAGE_OF_WARN = (1<<6),
+	sFLASH_TIMEOUT_ERROR    = (1<<7),
 };
 
 enum sFlashStates {

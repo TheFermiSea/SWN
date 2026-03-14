@@ -65,6 +65,25 @@ static inline void deselect_chip(void)	{  PIN_HIGH(flash_chip->CS.gpio, flash_ch
 enum sFlashStates get_flash_state(void) { return sflash_state; }
 #define delay_32ns(x) do {  register unsigned int i;  for (i = 0; i < x; ++i)   __asm__ __volatile__ ("nop\n\t":::"memory"); } while (0)
 
+// At 216 MHz, this gives roughly 50ms for DMA command completion
+#define SFLASH_DMA_TIMEOUT 10000000UL
+// Chip-ready polling: sector erase can take up to 12s per datasheet
+#define SFLASH_CHIP_READY_TIMEOUT 50000000UL
+
+static inline void sflash_wait_dma_done(void) {
+	uint32_t timeout = SFLASH_DMA_TIMEOUT;
+	while (sflash_state != sFLASH_NOTBUSY && sflash_state != sFLASH_ERROR) {
+		if (--timeout == 0) { sflash_error |= sFLASH_TIMEOUT_ERROR; break; }
+	}
+}
+
+static inline void sflash_wait_chip_ready(void) {
+	uint32_t timeout = SFLASH_CHIP_READY_TIMEOUT;
+	while (!sFLASH_is_chip_ready()) {
+		if (--timeout == 0) { sflash_error |= sFLASH_TIMEOUT_ERROR; break; }
+	}
+}
+
 static uint8_t g_cmd[4];
 
 //
@@ -75,7 +94,7 @@ static uint8_t g_cmd[4];
 void sFLASH_read_buffer(uint8_t* rxBuffer, uint32_t read_addr, uint16_t num_bytes)
 {
 	sFLASH_read_buffer_DMA(rxBuffer, read_addr, num_bytes);
-	while (get_flash_state() != sFLASH_NOTBUSY) {;}
+	sflash_wait_dma_done();
 }
 
 void sFLASH_read_buffer_DMA(uint8_t* rxBuffer, uint32_t read_addr, uint16_t num_bytes)
@@ -90,7 +109,7 @@ void sFLASH_read_buffer_DMA(uint8_t* rxBuffer, uint32_t read_addr, uint16_t num_
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, g_cmd, 4) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 
 	sflash_state = sFLASH_READING;
 	if (HAL_SPI_Receive_DMA(&flashram_spi, rxBuffer, num_bytes) != HAL_OK)
@@ -106,15 +125,15 @@ void sFLASH_read_buffer_DMA(uint8_t* rxBuffer, uint32_t read_addr, uint16_t num_
 // {
 // 	sFLASH_write_buffer_DMA(txBuffer, write_addr, num_bytes);
 // 	while (get_flash_state() != sFLASH_NOTBUSY) {;}
-// 	while (!sFLASH_is_chip_ready()) {;}
+// 	sflash_wait_chip_ready();
 // }
 
 void sFLASH_write_page(uint8_t* txBuffer, uint32_t write_addr, uint16_t num_bytes)
 {
 	if (!num_bytes) return;
 	sFLASH_write_page_DMA(txBuffer, write_addr, num_bytes);
-	while (get_flash_state() != sFLASH_NOTBUSY) {;}
-	while (!sFLASH_is_chip_ready()) {;}
+	sflash_wait_dma_done();
+	sflash_wait_chip_ready();
 }
 
 void sFLASH_write_page_DMA(uint8_t* txBuffer, uint32_t write_addr, uint16_t num_bytes)
@@ -136,7 +155,7 @@ void sFLASH_write_page_DMA(uint8_t* txBuffer, uint32_t write_addr, uint16_t num_
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, g_cmd, 4) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 
 	sflash_state = sFLASH_WRITING;
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, txBuffer, num_bytes) != HAL_OK)
@@ -222,7 +241,7 @@ void sFLASH_write_enable(void)
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, &write_enable_cmd, 1) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 	deselect_chip();
 }
 
@@ -233,7 +252,7 @@ void sFLASH_write_enable(void)
 void sFLASH_erase_sector(uint32_t SectorAddr)
 {
 	sFLASH_erase_sector_background(SectorAddr);
-	while (!sFLASH_is_chip_ready()) {;}
+	sflash_wait_chip_ready();
 }
 
 // After issuing the erase command it does not wait until the flash chip is ready
@@ -259,7 +278,7 @@ void sFLASH_erase_sector_background(uint32_t SectorAddr)
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, g_cmd, 4) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 	deselect_chip();
 }
 
@@ -274,7 +293,7 @@ void sFLASH_erase_chip(void)
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, g_cmd, 1) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 	deselect_chip();
 }
 
@@ -292,7 +311,7 @@ uint8_t sFLASH_is_chip_ready(void)
 	if (HAL_SPI_TransmitReceive_DMA(&flashram_spi, read_sr_cmd, sr_data, 2) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 	deselect_chip();
 
 	if (sr_data[1] & sFLASH_WIP_FLAG)
@@ -312,22 +331,25 @@ void sFLASH_wait_for_chip_ready(void)
 	select_chip();	
 	if (HAL_SPI_Transmit_DMA(&flashram_spi, read_sr_cmd, 1) != HAL_OK)
 		sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
-	while (sflash_state != sFLASH_NOTBUSY)  { ; }
+	sflash_wait_dma_done();
 
 	// Loop as long as the memory is busy with a write cycle
+	uint32_t timeout = SFLASH_CHIP_READY_TIMEOUT;
 	do
 	{
-		// Send a dummy byte to generate the clock needed by the FLASH 
+		// Send a dummy byte to generate the clock needed by the FLASH
 		if (HAL_SPI_Receive_DMA(&flashram_spi, sr_data, 1) != HAL_OK)
 			sflash_error |= sFLASH_SPI_DMA_TX_ERROR;
 
-		if (sr_data[0] & sFLASH_E_ERR_FLAG) 
+		if (sr_data[0] & sFLASH_E_ERR_FLAG)
 			sflash_error |= sFLASH_ERASE_ERROR;
 
-		if (sr_data[0] & sFLASH_P_ERR_FLAG) 
+		if (sr_data[0] & sFLASH_P_ERR_FLAG)
 			sflash_error |= sFLASH_PROG_ERROR;
+
+		if (--timeout == 0) { sflash_error |= sFLASH_TIMEOUT_ERROR; break; }
 	}
-	while ((sr_data[0] & sFLASH_WIP_FLAG) == SET); // Write in progress 
+	while ((sr_data[0] & sFLASH_WIP_FLAG) == SET); // Write in progress
 
 	deselect_chip();
 }
