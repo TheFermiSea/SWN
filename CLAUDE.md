@@ -15,6 +15,7 @@ Requires the ARM Embedded Toolchain (`arm-none-eabi-gcc`). Tested with versions 
 | Command | Description |
 |---------|-------------|
 | `make` | Build firmware (`build/main.elf`, `.hex`, `.bin`) |
+| `make DEBUG=1` | Build with `-Og` optimization for debugging |
 | `make clean` | Remove build directory |
 | `make flash` | Flash via st-flash to `0x08010000` |
 | `make wav` | Generate audio bootloader WAV file |
@@ -83,7 +84,7 @@ Configured in `.clang-format`:
 - **No RTOS** — cooperative main loop architecture
 - **Dual flash layout:** Bootloader at `0x08000000`, application at `0x08010000`
 - **Hardware FPU:** Enabled (`-mfpu=fpv5-d16`, `-mfloat-abi=hard`), use hardware float freely
-- **Optimization:** Builds with `-O3` by default
+- **Optimization:** Builds with `-O3` by default; use `make DEBUG=1` for `-Og`
 - **DMA:** Used extensively for SPI flash and audio codec (SAI)
 - **External flash:** S25FL127 (128 Mbit) stores user wavetable spheres
 - **Audio codec:** Configured via I2C, audio data via SAI (Serial Audio Interface)

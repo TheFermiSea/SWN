@@ -49,14 +49,11 @@
 
 #include "drivers/leds_pwm.h"
 #include "wavetable_recording.h"
-#include "wavetable_editing.h"
 #include "wavetable_saveload.h"
 #include "quantz_scales.h"
 #include "calibrate_voct.h"
 #include "wavetable_saveload_UI.h"
-#include "flash_params.h"
 #include "timekeeper.h"
-#include "ui_modes.h"
 #include "wavetable_play_export.h"
 
 extern SystemCalibrations *system_calibrations;

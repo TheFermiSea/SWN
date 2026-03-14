@@ -86,7 +86,7 @@ CFLAGS  = $(OPTIMIZED_CFLAGS)
 CFLAGS += $(ARCH_CFLAGS) $(MCU)
 CFLAGS += -I.  $(INCLUDES)
 CFLAGS += -fdata-sections -ffunction-sections
-# CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
+CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"
 
 C0FLAGS  = -O0 -g -Wall
 C0FLAGS += $(ARCH_CFLAGS) $(MCU)
@@ -155,4 +155,9 @@ flash: $(BIN)
 
 clean:
 	rm -rf $(BUILDDIR)
-	
+
+DEPS = $(OBJECTS:.o=.d)
+$(DEPS):
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(DEPS)
+endif

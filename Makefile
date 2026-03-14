@@ -67,9 +67,17 @@ ARCH_CFLAGS = 	-DARM_MATH_CM7 \
 				-DUSE_HAL_DRIVER \
 				-DSTM32F765xx
 
+DEBUG ?= 0
+ifeq ($(DEBUG), 1)
+OPTFLAG = -Og
+else
 OPTFLAG = -O3
+endif
 
-CFLAGS = -g3 -Wall \
+CFLAGS = -g3 -Wall -Wextra \
+	-Wdouble-promotion \
+	-Werror=return-type \
+	-Wno-unused-parameter \
 	$(ARCH_CFLAGS) $(MCU) \
 	-I. $(INCLUDES) \
 	-fno-common \
@@ -97,99 +105,9 @@ LFLAGS =  -Wl,-Map,build/main.map,--cref \
 	-T $(LDSCRIPT)
 	# -specs=nano.specs -T $(LDSCRIPT) \
 
+# Per-file optimization override example:
 # build/src/hardware_tests.o: OPTFLAG = -O0
-
-#-----------------------------------
-# Uncomment to compile unoptimized:
-
-# # Main:
-# # -----
-# build/src/main.o: OPTFLAG = -O0
-#
-# # LFOS
-# # -------
-# build/src/params_lfo.o: OPTFLAG = -O0
-# build/src/params_lfo_clk.o: OPTFLAG = -O0
-# build/src/params_lfo_period.o: OPTFLAG = -O0
-
-# # Audio
-# # ------
-# build/src/oscillator.o: OPTFLAG = -O0
-# build/src/audio_util.o: OPTFLAG = -O0
-# build/src/wavetable_editing.o: OPTFLAG = -O0
-# build/src/wavetable_saveload.o: OPTFLAG = -O0
-# build/src/wavetable_recording.o: OPTFLAG = -O0
-# build/src/wavetable_effects.o: OPTFLAG = -O0
-# build/src/resample.o: OPTFLAG = -O0
-# build/src/fft_filter.o: OPTFLAG = -O0
-
-
-# # Parameters
-# # ----------
-# build/src/params_update.o: OPTFLAG = -O0
-# build/src/params_wt_browse.o: OPTFLAG = -O0
-
-# build/src/analog_conditioning.o: OPTFLAG = -O0
-# build/src/UI_conditioning.o: OPTFLAG = -O0
-# build/src/quantz_scales.o: OPTFLAG = -O0
-# build/src/led_cont.o: OPTFLAG = -O0
-# build/src/ui_modes.o: OPTFLAG = -O0
-
-
-# Timers
-# build/src/timekeeper.o: OPTFLAG = -O0
-
-# # Special Modes
-# # -------------
-# build/src/calibration.o: OPTFLAG = -O0
-# build/src/system_mode.o: OPTFLAG = -O0
-# build/src/led_color_adjust.o: OPTFLAG = -O0
-#
-# build/src/preset_manager.o: OPTFLAG = -O0
-# build/src/preset_manager_UI.o: OPTFLAG = -O0
-# build/src/preset_manager_undo.o: OPTFLAG = -O0
-#
-
-
-
-# # Drivers:
-# # --------
-#
-# ADC
-# build/src/drivers/adc_builtin_driver.o: OPTFLAG = -O0
-# build/src/drivers/ads8634_driver.o: OPTFLAG = -O0
-# build/src/adc_interface.o: OPTFLAG = -O0
-# build/src/analog_conditioning.o: OPTFLAG = -O0
-#
-# GPIO Setup
-# build/src/gpio_pins.o: OPTFLAG = -O0
-# build/src/hardware_controls.o: OPTFLAG = -O0
-#
-# GPIO Controls
-# build/src/drivers/button_driver.o: OPTFLAG = -O0
-# build/src/drivers/mono_led_driver.o: OPTFLAG = -O0
-# build/src/drivers/rotary_driver.o: OPTFLAG = -O0
-# build/src/drivers/switch_driver.o: OPTFLAG = -O0
-#
-# PWM LEDs
-# build/src/drivers/pca9685_driver.o: OPTFLAG = -O0
-# build/stm32/periph/src/stm32f7xx_hal_i2c.o: OPTFLAG = -O0
-# build/src/drivers/leds_pwm.o: OPTFLAG = -O0
-#
-# PWM Timer outputs
-# build/src/envout_pwm.o: OPTFLAG = -O0
-#
-# External Flash
-# build/src/drivers/flash_S25FL127.o: OPTFLAG = -O0
-# build/src/drivers/flashram_spidma.o: OPTFLAG = -O0
-# build/src/sphere_flash_io.o: OPTFLAG = -O0
-# build/src/wavetable_play_export.o: OPTFLAG = -O0
-
-# Sel Bus
-# build/src/drivers/uart_driver.o: OPTFLAG = -O0
-# build/src/sel_bus.o: OPTFLAG = -O0
-# build/stm32/periph/src/stm32f7xx_hal_uart.o: OPTFLAG = -O0
-#-----------------------------------
+# Or use: make DEBUG=1  (sets all files to -Og)
 
 
 all: Makefile $(BIN) $(HEX)
