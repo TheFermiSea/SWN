@@ -39,10 +39,10 @@
 #include "audio_util.h"
 #include "codec_sai.h"
 
-extern o_params params;
-extern o_wt_osc			wt_osc;
+extern volatile o_params params;
+extern volatile o_wt_osc 		wt_osc;
 extern o_led_cont 		led_cont;
-extern enum 			UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 extern uint32_t 		colorPalette[NUM_LED_COLORS][NUM_PALETTE_COLORS];
 extern SRAM1DATA o_spherebuf spherebuf;
 

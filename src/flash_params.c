@@ -48,7 +48,7 @@ SystemCalibrations *system_calibrations = &s_system_calibrations;
 SystemCalibrations s_staging_system_calibrations;
 SystemCalibrations *staging_system_calibrations = &s_staging_system_calibrations;
 
-extern o_systemSettings	system_settings;
+extern volatile o_systemSettings system_settings;
 o_systemSettings	staging_system_settings;
 
 

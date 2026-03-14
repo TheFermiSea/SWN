@@ -38,10 +38,10 @@
 #include "oscillator.h"
 #include "ui_modes.h"
 
-extern o_params 	params;
+extern volatile o_params 	params;
 extern o_lfos 		lfos;
 extern o_led_cont 	led_cont;
-extern enum UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 
 uint32_t LFOMON;
 uint32_t TRIGMON;

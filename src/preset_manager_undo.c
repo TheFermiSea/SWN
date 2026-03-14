@@ -32,7 +32,7 @@
 #include "params_update.h"
 #include "params_lfo.h"
 
-extern	o_params 		params;				// 868 Bytes
+extern volatile o_params 		params;				// 868 Bytes
 extern	o_lfos   		lfos;				// 526 Bytes
 
 extern	o_preset_manager		preset_mgr;

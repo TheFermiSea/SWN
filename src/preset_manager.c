@@ -41,7 +41,7 @@
 #include "wavetable_saveload.h"
 #include "startup_preset_storage.h"
 
-extern o_params params;
+extern volatile o_params params;
 extern o_lfos lfos;
 
 o_preset_manager preset_mgr;

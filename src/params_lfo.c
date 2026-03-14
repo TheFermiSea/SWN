@@ -45,13 +45,13 @@
 #include "wavetable_editing.h"
 
 
-extern o_params params;
-extern o_calc_params calc_params;
+extern volatile o_params params;
+extern volatile o_calc_params calc_params;
 extern o_led_cont led_cont;
 extern o_macro_states 	macro_states;
-extern o_systemSettings system_settings;
+extern volatile o_systemSettings system_settings;
 extern o_analog analog[NUM_ANALOG_ELEMENTS];
-extern enum UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 
 o_lfos   lfos;
 uint16_t divmult_cv;

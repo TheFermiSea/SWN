@@ -51,13 +51,13 @@
 #include "codec_sai.h"
 
 extern const float BROWSE_TABLE[ NUM_WAVEFORMS_IN_SPHERE ][ NUM_WT_DIMENSIONS ];
-extern enum UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 extern o_led_cont 		led_cont;
 extern uint32_t colorPalette[NUM_LED_COLORS][NUM_PALETTE_COLORS];
 
-extern o_wt_osc	wt_osc;
-extern o_params params;
-extern o_calc_params calc_params;
+extern volatile o_wt_osc wt_osc;
+extern volatile o_params params;
+extern volatile o_calc_params calc_params;
 extern const float 	exp_1voct_10_41V[4096];
 
 // sphere data

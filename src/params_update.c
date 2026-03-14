@@ -62,14 +62,14 @@
 #include "wavetable_play_export.h"
 #include "preset_manager_selbus.h"
 
-extern o_wt_osc wt_osc;
-extern enum UI_Modes ui_mode;
+extern volatile o_wt_osc wt_osc;
+extern volatile enum UI_Modes ui_mode;
 extern o_lfos lfos;
 extern SystemCalibrations *system_calibrations;
 
 
-extern enum UI_Modes ui_mode;
-extern	o_systemSettings	system_settings;
+extern volatile enum UI_Modes ui_mode;
+extern volatile o_systemSettings system_settings;
 extern	o_analog	analog[NUM_ANALOG_ELEMENTS];
 extern	o_macro_states macro_states;
 extern	o_rotary	rotary[NUM_ROTARIES];
@@ -179,8 +179,8 @@ const float DISP_PATTERN[NUM_DISPPAT][6][3] =	{
 
 extern const float exp_1voct_10_41V[4096];
 
-o_params			params;
-o_calc_params		calc_params;
+volatile o_params			params;
+volatile o_calc_params		calc_params;
 
 uint32_t num_spheres_filled;
 o_waveform	waveform[NUM_CHANNELS][2][2][2];

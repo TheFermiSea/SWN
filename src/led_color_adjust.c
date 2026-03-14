@@ -61,7 +61,7 @@ extern o_button 		button[NUM_BUTTONS];
 extern o_rotary 		rotary[NUM_ROTARIES];
 extern o_monoLed 		monoLed[NUM_MONO_LED];
 
-extern enum 			UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 
 extern SystemCalibrations *system_calibrations;
 

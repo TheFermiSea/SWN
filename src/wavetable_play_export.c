@@ -42,9 +42,9 @@
 #include "codec_sai.h"
 
 extern const float BROWSE_TABLE[ NUM_WAVEFORMS_IN_SPHERE ][ NUM_WT_DIMENSIONS ];
-extern o_wt_osc wt_osc;
-extern o_params params;
-extern enum UI_Modes ui_mode;
+extern volatile o_wt_osc wt_osc;
+extern volatile o_params params;
+extern volatile enum UI_Modes ui_mode;
 
 uint32_t play_export_sample_i;
 uint16_t play_export_offset;

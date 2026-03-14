@@ -31,7 +31,7 @@
 #include "system_settings.h"
 #include "globals.h"
 
-o_systemSettings	system_settings;
+volatile o_systemSettings	system_settings;
 
 void default_system_settings(void)
 {

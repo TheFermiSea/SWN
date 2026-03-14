@@ -37,7 +37,7 @@
 #include "calibrate_voct.h"
 #include "flash_params.h"
 
-enum 	UI_Modes ui_mode;
+volatile enum UI_Modes ui_mode;
 
 void check_ui_mode_requests(void){
 	

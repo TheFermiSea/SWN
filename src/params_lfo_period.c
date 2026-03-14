@@ -38,9 +38,9 @@
 #include <math.h>
 
 extern o_lfos 		lfos;
-extern o_params 	params;
-extern o_calc_params 	calc_params;
-extern o_wt_osc 	wt_osc;
+extern volatile o_params 	params;
+extern volatile o_calc_params 	calc_params;
+extern volatile o_wt_osc 	wt_osc;
 extern uint16_t 	divmult_cv;
 
 const float LFO_DIVMULTS[NUM_DIVMULTS] = {

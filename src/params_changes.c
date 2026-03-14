@@ -33,8 +33,8 @@
 
 const uint8_t ALL_CHANNEL_MASK = 0b111111;
 
-extern o_params 		params;
-extern o_calc_params 	calc_params;
+extern volatile o_params 		params;
+extern volatile o_calc_params 	calc_params;
 extern o_macro_states 	macro_states;
 
 //Returns bitmask of which channels were changed

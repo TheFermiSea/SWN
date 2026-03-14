@@ -43,10 +43,10 @@ uint8_t	first_calibration = 1;
 
 static float adc_lpf[NUM_VOCT_CHANNELS][VOCTCAL_LPF_SIZE];
 
-extern enum 			UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 extern SystemCalibrations *system_calibrations;
 extern o_analog 	analog[NUM_ANALOG_ELEMENTS];
-extern o_params params;
+extern volatile o_params params;
 extern o_lfos lfos;
 
 //Private:

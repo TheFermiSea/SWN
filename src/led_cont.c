@@ -59,19 +59,19 @@
 extern SystemCalibrations *system_calibrations;
 
 // UI
-extern enum UI_Modes 			ui_mode;
+extern volatile enum UI_Modes 			ui_mode;
 
 // LEDs
 o_led_cont				 		led_cont;
 extern const o_rgb_led			RGB_LED_OFF;
 
 // Params
-extern 		o_params 			params;
-extern		o_calc_params		calc_params;
+extern volatile o_params 			params;
+extern volatile o_calc_params 	calc_params;
 extern 		o_lfos				lfos;
 extern		o_preset_manager	preset_mgr;
 extern 		o_spherebuf	 		spherebuf;
-extern		o_systemSettings	system_settings;
+extern volatile o_systemSettings system_settings;
 
 // Hardware
 extern 		o_monoLed   		monoLed[NUM_MONO_LED];

@@ -67,8 +67,8 @@ const float FX_FINE_SCALING[NUM_FX] = {
 };
 
 extern SRAM1DATA 	o_spherebuf 			spherebuf;
-extern o_params params;
-extern o_calc_params calc_params;
+extern volatile o_params params;
+extern volatile o_calc_params calc_params;
 
 
 void overlap_smooth_wave(int16_t *in, int16_t *out, uint32_t in_size, uint32_t out_size){

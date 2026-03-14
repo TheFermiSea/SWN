@@ -3,7 +3,7 @@
 #include "preset_manager_UI.h"
 #include "system_settings.h"
 
-extern o_systemSettings	system_settings;
+extern volatile o_systemSettings system_settings;
 
 uint32_t queued_preset_num = MAX_PRESETS + 1;
 enum {

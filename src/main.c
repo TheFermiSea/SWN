@@ -77,7 +77,7 @@
 void SystemClock_Config(void);
 void SetVectorTable(uint32_t reset_address);
 
-extern enum 	UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 
 extern SystemCalibrations *system_calibrations;
 

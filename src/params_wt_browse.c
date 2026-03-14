@@ -36,10 +36,10 @@
 #include "params_update.h"
 #include "params_lfo.h"
 
-extern o_params params;
-extern o_calc_params calc_params;
+extern volatile o_params params;
+extern volatile o_calc_params calc_params;
 extern o_lfos   lfos;
-extern enum UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 extern 	o_analog 	analog[NUM_ANALOG_ELEMENTS];
 extern 	o_macro_states macro_states;
 extern	o_button 	button[NUM_BUTTONS];

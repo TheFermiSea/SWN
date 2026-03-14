@@ -47,15 +47,15 @@
 #include "gpio_pins.h"
 #include "wavetable_play_export.h"
 
-extern enum UI_Modes 	ui_mode;
+extern volatile enum UI_Modes 	ui_mode;
 extern o_rotary 		rotary[NUM_ROTARIES];
-extern o_params 		params;
-extern o_calc_params	calc_params;
-extern o_systemSettings	system_settings;
+extern volatile o_params 		params;
+extern volatile o_calc_params calc_params;
+extern volatile o_systemSettings system_settings;
 extern o_led_cont 		led_cont;
 
 extern o_recbuf 		recbuf;
-o_wt_osc				wt_osc;
+volatile o_wt_osc				wt_osc;
 uint8_t 				audio_in_gate;
 
 //Private:

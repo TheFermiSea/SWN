@@ -36,7 +36,7 @@
 #include "flash_params.h" 
 
 extern SystemCalibrations *system_calibrations;
-extern o_systemSettings system_settings;
+extern volatile o_systemSettings system_settings;
 // extern uint8_t leddriver_cur_buf;
 
 uint32_t pwmleds[2][NUM_PWM_LED_CHIPS][NUM_LEDS_PER_CHIP];

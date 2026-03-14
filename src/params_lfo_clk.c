@@ -39,7 +39,7 @@
 
 extern o_led_cont 		led_cont;
 extern o_lfos 			lfos;
-extern o_systemSettings	system_settings;
+extern volatile o_systemSettings system_settings;
 
 void read_ext_clk(void)
 {

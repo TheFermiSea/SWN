@@ -39,12 +39,12 @@
 #include "ui_modes.h"
 #include "params_update.h" 
 
-extern enum UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 extern o_spherebuf spherebuf;
 
 extern o_UserSphereManager user_sphere_mgr;
-extern o_params params;
-extern o_calc_params calc_params;
+extern volatile o_params params;
+extern volatile o_calc_params calc_params;
 
 // Given a sphere index (the "nth" sphere), return the physical bank number (flash slot)
 //

@@ -30,7 +30,7 @@
 #include "globals.h"
 #include "params_update.h"
 
-extern o_params params;
+extern volatile o_params params;
 
 uint8_t is_sphere_enabled(uint8_t sphere_num)
 {

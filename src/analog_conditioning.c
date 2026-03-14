@@ -70,7 +70,7 @@ extern SystemCalibrations *system_calibrations;
 o_analog analog[NUM_ANALOG_ELEMENTS];
 
 // UI
-extern enum UI_Modes ui_mode;
+extern volatile enum UI_Modes ui_mode;
 
 //Private:
 void process_analog_conditioning(void);
