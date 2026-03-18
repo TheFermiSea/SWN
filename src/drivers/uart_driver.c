@@ -23,8 +23,15 @@ UART_HandleTypeDef* UART_Init(uint32_t baud_rate)
 	gpio.Mode = GPIO_MODE_AF_PP;
 	gpio.Pull = GPIO_NOPULL;
 	gpio.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	gpio.Alternate = UART_RX_PIN_AF; 
+	gpio.Alternate = UART_RX_PIN_AF;
 	HAL_GPIO_Init(UART_RX_GPIO, &gpio);
+
+	gpio.Pin = UART_TX_PIN;
+	gpio.Mode = GPIO_MODE_AF_PP;
+	gpio.Pull = GPIO_NOPULL;
+	gpio.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+	gpio.Alternate = UART_TX_PIN_AF;
+	HAL_GPIO_Init(UART_TX_GPIO, &gpio);
 
 	__HAL_RCC_UART5_CLK_ENABLE();
 
@@ -33,7 +40,7 @@ UART_HandleTypeDef* UART_Init(uint32_t baud_rate)
 	huart.Init.WordLength = UART_WORDLENGTH_8B;
 	huart.Init.StopBits = UART_STOPBITS_1;
 	huart.Init.Parity = UART_PARITY_NONE;
-	huart.Init.Mode = UART_MODE_RX;
+	huart.Init.Mode = UART_MODE_TX_RX;
 	huart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
 	huart.Init.OverSampling = UART_OVERSAMPLING_16;
 	huart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;

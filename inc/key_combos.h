@@ -118,3 +118,15 @@ static inline uint8_t key_combo_disable_selbus_save(void) { return (rotary_press
 																	&& button_pressed(butm_LFOMODE_BUTTON) \
 																	&& button_pressed(butm_B_BUTTON)); }
 
+// MIDI mode: hold LFOVCA + LFOMODE + FINE for 2 seconds
+static inline uint8_t key_combo_enter_midi_mode(void) {
+	return (button_med_pressed(butm_LFOVCA_BUTTON)
+		 && button_med_pressed(butm_LFOMODE_BUTTON)
+		 && switch_pressed(FINE_BUTTON)
+		 && !rotary_pressed(rotm_PRESET));
+}
+static inline uint8_t key_combo_midi_mode_released(void) {
+	return (button_released(butm_LFOVCA_BUTTON)
+		 && button_released(butm_LFOMODE_BUTTON));
+}
+

@@ -61,6 +61,7 @@
 #include "drivers/flashram_spidma.h"
 #include "wavetable_play_export.h"
 #include "preset_manager_selbus.h"
+#include "midi.h"
 
 extern volatile o_wt_osc wt_osc;
 extern volatile enum UI_Modes ui_mode;
@@ -1157,6 +1158,14 @@ void update_pitch(uint8_t chan)
 			calc_params.voct[chan] *= params.transpose_cv;
 
 		if (params.new_key[chan]) params.new_key[chan] = 0;
+	}
+
+	// MIDI mode: override voct with MIDI note pitch
+	{
+		uint8_t midi_active;
+		float midi_voct = midi_get_voct_override(chan, &midi_active);
+		if (midi_active)
+			calc_params.voct[chan] = midi_voct;
 	}
 
 	ch_freq = F_BASE_FREQ  * calc_params.transposition[chan] * calc_params.voct[chan];

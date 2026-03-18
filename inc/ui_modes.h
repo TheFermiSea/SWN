@@ -57,6 +57,8 @@ enum UI_Modes {
 
 	FACTORY_RESET,
 
+	MIDI_MODE,
+
 	NUM_UI_MODES
 };
 

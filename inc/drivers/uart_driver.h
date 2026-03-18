@@ -9,5 +9,8 @@ void UART_Start(uint8_t *pData, uint16_t Size);
 #define UART_RX_GPIO GPIOD
 #define UART_RX_PIN GPIO_PIN_2
 #define UART_RX_PIN_AF GPIO_AF8_UART5
+#define UART_TX_GPIO GPIOC
+#define UART_TX_PIN GPIO_PIN_12
+#define UART_TX_PIN_AF GPIO_AF8_UART5
 #define UART_RX_NVIC_PRI 3
 #define UART_RX_NVIC_SUBPRI 1

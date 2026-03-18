@@ -70,6 +70,7 @@
 #include "UI_conditioning.h"
 #include "drivers/flashram_spidma.h"
 #include "sel_bus.h"
+#include "midi.h"
 
 
 
@@ -128,6 +129,7 @@ int main(void)
 	HAL_Delay(80);
 
 	selBus_Init();
+	midi_init();
 
 	// Initialize starting values
 	init_color_palette();
@@ -274,6 +276,8 @@ int main(void)
 		check_sel_bus_event();	// FixMe: call from more adequate location (should be updated at about the data rate)
 
 		if (ui_mode == VOCT_CALIBRATE) process_voct_calibrate_mode();
+
+		midi_tx_param_state();
 
 	} //end main loop
 

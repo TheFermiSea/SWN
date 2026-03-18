@@ -1,6 +1,7 @@
 #include "sel_bus.h"
 #include "drivers/uart_driver.h"
 #include "preset_manager_selbus.h"
+#include "midi.h"
 
 UART_HandleTypeDef *midiUART;
 
@@ -86,6 +87,9 @@ void UART5_IRQHandler(void)
 		if (presetNum != kMIDIDataMakeNoiseSaveAll)
 			sel_bus_queue_save_preset(presetNum);
 	}
+
+	// Forward byte to MIDI engine (active only when MIDI mode enabled)
+	midi_process_byte(midiByte);
 
 	selBus_Start();
 }

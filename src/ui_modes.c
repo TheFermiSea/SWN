@@ -31,11 +31,12 @@
 #include "key_combos.h"
 #include "params_update.h"
 #include "led_cont.h"
-#include "wavetable_editing.h" 
-#include "wavetable_saveload.h" 
+#include "wavetable_editing.h"
+#include "wavetable_saveload.h"
 #include "UI_conditioning.h"
 #include "calibrate_voct.h"
 #include "flash_params.h"
+#include "midi.h"
 
 volatile enum UI_Modes ui_mode;
 
@@ -46,8 +47,13 @@ void check_ui_mode_requests(void){
 
 	if (ui_mode == PLAY){
 		if 		(key_combo_enter_editing())			{ arm_ui = WTEDITING;}
-		else if (key_combo_enter_voct_calibrate())	{stop_all_displays(); arm_ui = VOCT_CALIBRATE;} 
+		else if (key_combo_enter_voct_calibrate())	{stop_all_displays(); arm_ui = VOCT_CALIBRATE;}
 		else if (key_combo_reset_to_factory())		{stop_all_displays(); arm_ui = FACTORY_RESET;}
+		else if (key_combo_enter_midi_mode())		{ arm_ui = MIDI_MODE;}
+	}
+
+	else if (ui_mode == MIDI_MODE){
+		if (key_combo_enter_midi_mode())			{ arm_ui = PLAY;} // toggle off
 	}
 
 	else if (ui_mode == WTREC_WAIT){
@@ -132,6 +138,16 @@ void check_ui_mode_requests(void){
 	else if (!key_combo_enter_voct_calibrate() && (arm_ui == FACTORY_RESET)){
 		factory_reset();
 		arm_ui = UI_NONE;
-	} 
+	}
+	else if (key_combo_midi_mode_released() && (arm_ui == MIDI_MODE)){
+		midi_enable();
+		ui_mode = MIDI_MODE;
+		arm_ui = UI_NONE;
+	}
+	else if (key_combo_midi_mode_released() && (arm_ui == PLAY) && (ui_mode == MIDI_MODE)){
+		midi_disable();
+		ui_mode = PLAY;
+		arm_ui = UI_NONE;
+	}
 }
 
