@@ -754,6 +754,14 @@ void read_level_and_pan(uint8_t chan)
 
 		level *= read_vca_cv(chan);
 
+		// MIDI velocity override: scale level by velocity when voice is active
+		{
+			uint8_t vel_active;
+			float vel_level = midi_get_velocity_level(chan, &vel_active);
+			if (vel_active)
+				level = vel_level;
+		}
+
 		calc_params.level[chan] = _CLAMP_F(level, 0.f, 4095.f);
 	}
 
@@ -2367,6 +2375,7 @@ void calc_wt_pos(uint8_t chan){
 		disp_amt = WT_DIM_SIZE * total_disp * (DISP_PATTERN[disp_pattern][chan][wt_dim]);
 
 		nav_cv = params.wt_pos_lock[chan] ? 0: params.wt_nav_cv[wt_dim];
+		nav_cv += midi_get_voice_nav(chan, wt_dim);
 		new_wt_pos = _WRAP_F(disp_amt + browse_nav[wt_dim] + nav_cv + nav_enc[wt_dim], 0, WT_DIM_SIZE);
 
 		if (snap_to_int)
