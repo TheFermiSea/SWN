@@ -1,0 +1,530 @@
+// ============================================================
+// SWN MIDI Controller - Mozaic Script for AUM
+// ============================================================
+// Routes MIDI from a keyboard/sequencer to the SWN's 6 voices
+// with per-voice pitch bend, sphere navigation, velocity,
+// and 14-bit high-resolution CC support.
+//
+// INPUT:  MIDI notes/CCs/pitchbend on any channel
+// OUTPUT: 6 MIDI channels (ch 1-6) to SWN SelBus jack
+//
+// KNOB LAYOUT:
+//   K0: Voice Mode (0=RoundRobin, 1=LowFirst, 2=Unison, 3=Split)
+//   K1: Latitude (global sphere Z)
+//   K2: Longitude (global sphere X)
+//   K3: Depth (global sphere Y)
+//   K4: Sphere Spread (per-voice offset around knob position)
+//   K5: Browse (wavetable selection)
+//   K6: Transpose
+//   K7: Chord
+//   K8: LFO Speed
+//   K9: LFO Shape
+//   K10: Dispersion
+//   K11: Dispersion Pattern
+//   K12: WT Spread
+//   K13: Pitch Bend Range (semitones, 1-12)
+//   K14: Aftertouch → Latitude amount
+//   K15: Aftertouch → Depth amount
+// ============================================================
+
+@OnLoad
+  // Voice state arrays (6 voices)
+  for i = 0 to 5
+    vNote[i] = -1
+    vActive[i] = 0
+    vAge[i] = 0
+  endfor
+
+  nextVoice = 0
+  voiceAge = 0
+  voiceMode = 0
+
+  // 14-bit sphere accumulators
+  latMSB = 64
+  lonMSB = 64
+  depMSB = 64
+  latLSB = 0
+  lonLSB = 0
+  depLSB = 0
+
+  // Aftertouch state
+  lastAT = 0
+
+  // SWN CC numbers
+  CC_BROWSE     = 1
+  CC_LATITUDE   = 2
+  CC_LONGITUDE  = 3
+  CC_DEPTH      = 4
+  CC_WTSPREAD   = 5
+  CC_TRANSPOSE  = 6
+  CC_CHORD      = 7
+  CC_LFO_SPEED  = 14
+  CC_LFO_SHAPE  = 15
+  CC_DISPERSION = 17
+  CC_DISPPAT    = 18
+  CC_LSB_OFFSET = 32
+
+  // Setup timer for periodic TX readback processing (50ms)
+  SetTimerInterval 50
+
+  // Knob labels
+  SetKnobName 0, {Mode}
+  SetKnobName 1, {Latitude}
+  SetKnobName 2, {Longitude}
+  SetKnobName 3, {Depth}
+  SetKnobName 4, {SphSpread}
+  SetKnobName 5, {Browse}
+  SetKnobName 6, {Transpose}
+  SetKnobName 7, {Chord}
+  SetKnobName 8, {LFO Spd}
+  SetKnobName 9, {LFO Shp}
+  SetKnobName 10, {Dispers}
+  SetKnobName 11, {DispPat}
+  SetKnobName 12, {WTSpread}
+  SetKnobName 13, {PB Range}
+  SetKnobName 14, {AT>Lat}
+  SetKnobName 15, {AT>Depth}
+
+  // Defaults
+  SetKnobValue 0, 0
+  SetKnobValue 1, 64
+  SetKnobValue 2, 64
+  SetKnobValue 3, 64
+  SetKnobValue 4, 0
+  SetKnobValue 5, 0
+  SetKnobValue 6, 64
+  SetKnobValue 7, 0
+  SetKnobValue 8, 64
+  SetKnobValue 9, 0
+  SetKnobValue 10, 0
+  SetKnobValue 11, 0
+  SetKnobValue 12, 0
+  SetKnobValue 13, 16
+  SetKnobValue 14, 0
+  SetKnobValue 15, 0
+
+  ShowLayout 2
+
+  Log {SWN MIDI Controller loaded}
+  Log {Mode: RoundRobin | 6 voices | 14-bit sphere}
+@End
+
+// ============================================================
+// VOICE ALLOCATION
+// ============================================================
+
+// Find a free voice, or steal based on mode
+@Description
+  // Returns voice index in _result
+  // voiceMode 0=RoundRobin, 1=LowestFirst, 2=Unison, 3=Split
+@End
+
+@OnMidiInput
+  if MIDICommand = 0x90
+    // --- NOTE ON ---
+    _note = MIDIByte2
+    _vel  = MIDIByte3
+
+    if _vel = 0
+      // Velocity 0 = note off
+      Call @HandleNoteOff
+    else
+      Call @HandleNoteOn
+    endif
+
+  elseif MIDICommand = 0x80
+    // --- NOTE OFF ---
+    _note = MIDIByte2
+    Call @HandleNoteOff
+
+  elseif MIDICommand = 0xE0
+    // --- PITCH BEND ---
+    _pbLSB = MIDIByte2
+    _pbMSB = MIDIByte3
+    _pbVal = (_pbMSB * 128) + _pbLSB
+
+    // Forward pitch bend to all active voices
+    for i = 0 to 5
+      if vActive[i] = 1
+        SendMIDIPitchBend i, _pbVal
+      endif
+    endfor
+
+  elseif MIDICommand = 0xD0
+    // --- CHANNEL AFTERTOUCH ---
+    lastAT = MIDIByte2
+    Call @ApplyAftertouch
+
+  elseif MIDICommand = 0xB0
+    // --- CC passthrough for external knobs ---
+    // Forward CCs 1-18 as global SWN parameters on all 6 channels
+    _cc = MIDIByte2
+    _ccVal = MIDIByte3
+
+    if _cc = 1
+      // Mod wheel → Browse
+      for i = 0 to 5
+        SendMIDICC i, CC_BROWSE, _ccVal
+      endfor
+    elseif _cc >= 70 and _cc <= 75
+      // CCs 70-75: per-voice latitude (ch = cc - 70)
+      _voice = _cc - 70
+      SendMIDICC _voice, CC_LATITUDE, _ccVal
+    elseif _cc >= 76 and _cc <= 81
+      // CCs 76-81: per-voice longitude
+      _voice = _cc - 76
+      SendMIDICC _voice, CC_LONGITUDE, _ccVal
+    elseif _cc >= 82 and _cc <= 87
+      // CCs 82-87: per-voice depth
+      _voice = _cc - 82
+      SendMIDICC _voice, CC_DEPTH, _ccVal
+    endif
+
+  elseif MIDICommand = 0xF8
+    // --- MIDI CLOCK --- pass through directly
+    SendMIDIThru
+
+  elseif MIDICommand = 0xFA or MIDICommand = 0xFB or MIDICommand = 0xFC
+    // --- START/CONTINUE/STOP --- pass through
+    SendMIDIThru
+  endif
+@End
+
+// ============================================================
+// NOTE ON HANDLER
+// ============================================================
+@HandleNoteOn
+  voiceMode = GetKnobValue 0
+  voiceMode = voiceMode / 32
+
+  voiceAge = voiceAge + 1
+
+  if voiceMode = 0
+    // ROUND ROBIN: cycle through voices
+    _voice = -1
+    // First try to find a free voice starting from nextVoice
+    for i = 0 to 5
+      _tryV = (nextVoice + i) % 6
+      if vActive[_tryV] = 0
+        _voice = _tryV
+        i = 6
+      endif
+    endfor
+    // If no free voice, steal nextVoice
+    if _voice = -1
+      _voice = nextVoice
+      // Send note off for stolen voice
+      SendMIDINoteOff _voice, vNote[_voice], 0
+    endif
+    nextVoice = (_voice + 1) % 6
+
+  elseif voiceMode = 1
+    // LOWEST FIRST: find lowest free voice
+    _voice = -1
+    for i = 0 to 5
+      if vActive[i] = 0
+        _voice = i
+        i = 6
+      endif
+    endfor
+    if _voice = -1
+      // Steal oldest voice
+      _oldest = 999999
+      _voice = 0
+      for i = 0 to 5
+        if vAge[i] < _oldest
+          _oldest = vAge[i]
+          _voice = i
+        endif
+      endfor
+      SendMIDINoteOff _voice, vNote[_voice], 0
+    endif
+
+  elseif voiceMode = 2
+    // UNISON: all 6 voices play the same note
+    for i = 0 to 5
+      if vActive[i] = 1
+        SendMIDINoteOff i, vNote[i], 0
+      endif
+      vNote[i] = _note
+      vActive[i] = 1
+      vAge[i] = voiceAge
+      SendMIDINoteOn i, _note, _vel
+    endfor
+    // Apply sphere spread for unison
+    Call @ApplySphereSpread
+    Exit
+
+  elseif voiceMode = 3
+    // SPLIT: notes 0-63 → voices 0-2, notes 64-127 → voices 3-5
+    if _note < 64
+      _base = 0
+    else
+      _base = 3
+    endif
+    _voice = -1
+    for i = _base to (_base + 2)
+      if vActive[i] = 0
+        _voice = i
+        i = _base + 3
+      endif
+    endfor
+    if _voice = -1
+      _voice = _base
+      SendMIDINoteOff _voice, vNote[_voice], 0
+    endif
+  endif
+
+  // Assign note to voice
+  vNote[_voice] = _note
+  vActive[_voice] = 1
+  vAge[_voice] = voiceAge
+  SendMIDINoteOn _voice, _note, _vel
+
+  // Apply sphere spread
+  Call @ApplySphereSpread
+@End
+
+// ============================================================
+// NOTE OFF HANDLER
+// ============================================================
+@HandleNoteOff
+  voiceMode = GetKnobValue 0
+  voiceMode = voiceMode / 32
+
+  if voiceMode = 2
+    // UNISON: release all voices
+    for i = 0 to 5
+      if vNote[i] = _note
+        SendMIDINoteOff i, _note, 0
+        vActive[i] = 0
+        vNote[i] = -1
+      endif
+    endfor
+  else
+    // Find voice playing this note and release it
+    for i = 0 to 5
+      if vActive[i] = 1 and vNote[i] = _note
+        SendMIDINoteOff i, _note, 0
+        vActive[i] = 0
+        vNote[i] = -1
+        i = 6
+      endif
+    endfor
+  endif
+@End
+
+// ============================================================
+// SPHERE SPREAD: offset each voice's sphere position
+// ============================================================
+@ApplySphereSpread
+  _spread = GetKnobValue 4
+  _lat    = GetKnobValue 1
+  _lon    = GetKnobValue 2
+  _dep    = GetKnobValue 3
+
+  if _spread = 0
+    // No spread: all voices get same position
+    for i = 0 to 5
+      Call @SendNav14bit
+    endfor
+  else
+    // Spread: each voice gets offset position
+    // Voice 0 = center, others spread in a circle around it
+    for i = 0 to 5
+      // Offset pattern: voices spread in lat/lon plane
+      _angle = (i * 60)
+      _latOff = (Sin _angle) * _spread / 127
+      _lonOff = (Cos _angle) * _spread / 127
+
+      _vLat = _lat + (_latOff * 64)
+      _vLon = _lon + (_lonOff * 64)
+      _vDep = _dep
+
+      // Clamp 0-127
+      if _vLat < 0
+        _vLat = 0
+      endif
+      if _vLat > 127
+        _vLat = 127
+      endif
+      if _vLon < 0
+        _vLon = 0
+      endif
+      if _vLon > 127
+        _vLon = 127
+      endif
+
+      // Send as 14-bit (MSB on CC, LSB on CC+32)
+      SendMIDICC i, CC_LATITUDE, _vLat
+      SendMIDICC i, CC_LATITUDE + CC_LSB_OFFSET, 0
+      SendMIDICC i, CC_LONGITUDE, _vLon
+      SendMIDICC i, CC_LONGITUDE + CC_LSB_OFFSET, 0
+      SendMIDICC i, CC_DEPTH, _vDep
+      SendMIDICC i, CC_DEPTH + CC_LSB_OFFSET, 0
+    endfor
+  endif
+@End
+
+// ============================================================
+// Send 14-bit navigation CC for voice i
+// ============================================================
+@SendNav14bit
+  _lat14 = GetKnobValue 1
+  _lon14 = GetKnobValue 2
+  _dep14 = GetKnobValue 3
+
+  // Convert 7-bit knob to 14-bit (MSB = knob value, LSB = 0)
+  SendMIDICC i, CC_LATITUDE, _lat14
+  SendMIDICC i, CC_LATITUDE + CC_LSB_OFFSET, 0
+  SendMIDICC i, CC_LONGITUDE, _lon14
+  SendMIDICC i, CC_LONGITUDE + CC_LSB_OFFSET, 0
+  SendMIDICC i, CC_DEPTH, _dep14
+  SendMIDICC i, CC_DEPTH + CC_LSB_OFFSET, 0
+@End
+
+// ============================================================
+// AFTERTOUCH → Sphere modulation
+// ============================================================
+@ApplyAftertouch
+  _atLat = GetKnobValue 14
+  _atDep = GetKnobValue 15
+
+  if _atLat > 0 or _atDep > 0
+    _baseLat = GetKnobValue 1
+    _baseDep = GetKnobValue 3
+
+    // Scale aftertouch by amount knobs
+    _latMod = _baseLat + ((lastAT * _atLat) / 127)
+    _depMod = _baseDep + ((lastAT * _atDep) / 127)
+
+    if _latMod > 127
+      _latMod = 127
+    endif
+    if _depMod > 127
+      _depMod = 127
+    endif
+
+    for i = 0 to 5
+      if vActive[i] = 1
+        SendMIDICC i, CC_LATITUDE, _latMod
+        SendMIDICC i, CC_DEPTH, _depMod
+      endif
+    endfor
+  endif
+@End
+
+// ============================================================
+// KNOB CHANGES → SWN parameters
+// ============================================================
+@OnKnobChange
+  _knob = LastKnob
+  _val  = GetKnobValue _knob
+
+  if _knob = 0
+    // Voice mode changed
+    _mode = _val / 32
+    if _mode = 0
+      Log {Mode: Round Robin}
+    elseif _mode = 1
+      Log {Mode: Lowest First}
+    elseif _mode = 2
+      Log {Mode: Unison}
+    else
+      Log {Mode: Split}
+    endif
+
+  elseif _knob >= 1 and _knob <= 3
+    // Sphere navigation: send to all voices with spread
+    Call @ApplySphereSpread
+
+  elseif _knob = 4
+    // Sphere spread changed: reapply
+    Call @ApplySphereSpread
+
+  elseif _knob = 5
+    // Browse
+    for i = 0 to 5
+      SendMIDICC i, CC_BROWSE, _val
+    endfor
+
+  elseif _knob = 6
+    // Transpose
+    for i = 0 to 5
+      SendMIDICC i, CC_TRANSPOSE, _val
+    endfor
+
+  elseif _knob = 7
+    // Chord
+    for i = 0 to 5
+      SendMIDICC i, CC_CHORD, _val
+    endfor
+
+  elseif _knob = 8
+    // LFO Speed
+    for i = 0 to 5
+      SendMIDICC i, CC_LFO_SPEED, _val
+    endfor
+
+  elseif _knob = 9
+    // LFO Shape
+    for i = 0 to 5
+      SendMIDICC i, CC_LFO_SHAPE, _val
+    endfor
+
+  elseif _knob = 10
+    // Dispersion
+    for i = 0 to 5
+      SendMIDICC i, CC_DISPERSION, _val
+    endfor
+
+  elseif _knob = 11
+    // Dispersion pattern
+    for i = 0 to 5
+      SendMIDICC i, CC_DISPPAT, _val
+    endfor
+
+  elseif _knob = 12
+    // WT Spread
+    for i = 0 to 5
+      SendMIDICC i, CC_WTSPREAD, _val
+    endfor
+
+  elseif _knob = 13
+    _range = (_val / 10) + 1
+    Log {PB Range: }, _range, { semitones}
+
+  elseif _knob = 14 or _knob = 15
+    // Aftertouch sensitivity changed — reapply if AT active
+    if lastAT > 0
+      Call @ApplyAftertouch
+    endif
+  endif
+@End
+
+// ============================================================
+// TIMER: periodic status display
+// ============================================================
+@OnTimer
+  // Count active voices for display
+  _count = 0
+  for i = 0 to 5
+    if vActive[i] = 1
+      _count = _count + 1
+    endif
+  endfor
+
+  // Update label with voice status
+  _mode = GetKnobValue 0
+  _mode = _mode / 32
+
+  if _mode = 0
+    SetShortLabel {RR }
+  elseif _mode = 1
+    SetShortLabel {LO }
+  elseif _mode = 2
+    SetShortLabel {UNI}
+  else
+    SetShortLabel {SPL}
+  endif
+@End
