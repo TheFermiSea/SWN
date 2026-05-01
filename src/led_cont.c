@@ -56,6 +56,8 @@
 #include "timekeeper.h"
 #include "wavetable_play_export.h"
 
+#include "chaos_interface.h"
+
 extern SystemCalibrations *system_calibrations;
 
 // UI
@@ -155,6 +157,7 @@ void update_pwm_leds(void)
 	update_clockin_led();
 	update_audioin_led();
 	update_LED_rings();
+	override_chaos_leds();
 }
 
 void start_led_display(void)

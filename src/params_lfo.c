@@ -53,6 +53,8 @@ extern volatile o_systemSettings system_settings;
 extern o_analog analog[NUM_ANALOG_ELEMENTS];
 extern volatile enum UI_Modes ui_mode;
 
+#include "chaos_interface.h"
+
 o_lfos   lfos;
 uint16_t divmult_cv;
 
@@ -60,6 +62,40 @@ uint16_t divmult_cv;
 
 void update_lfos(void)
 {
+	// Run chaos math. If it returns 1, chaos mode is active and handled the LFO frame.
+	if (process_chaos_lfos()) {
+		int16_t enc;
+		uint8_t fine = switch_pressed(FINE_BUTTON);
+
+		// Speed: LFO Speed encoder
+		enc = pop_encoder_q(pec_LFOSPEED);
+		if (enc) chaos_adjust_speed(enc, fine);
+
+		// Character/turbulence: LFO Shape encoder (turn)
+		enc = pop_encoder_q(pec_LFOSHAPE);
+		if (enc) chaos_adjust_character(enc, fine);
+
+		// Spread: Phase encoder (secondary of Shape)
+		enc = pop_encoder_q(sec_LFOPHASE);
+		if (enc) chaos_adjust_spread(enc, fine);
+
+		// Gain/depth: Gain encoder
+		enc = pop_encoder_q(sec_LFOGAIN);
+		if (enc) chaos_adjust_gain(enc, fine);
+
+		// Freeze toggle: Shape encoder press
+		{
+			static uint8_t freeze_was_pressed = 0;
+			uint8_t pressed = rotary_pressed(rotm_LFOSHAPE);
+			if (pressed && !freeze_was_pressed) {
+				chaos_toggle_freeze();
+			}
+			freeze_was_pressed = pressed;
+		}
+
+		return;
+	}
+
 	update_lfo_params();
 	read_ext_clk();
 	update_lfo_calcs();

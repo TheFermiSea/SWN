@@ -28,3 +28,4 @@ TAGS
 # Tool outputs
 calc_lfoinc_table/calc-increments
 wavetable/formant_library_calc/make-waveform-library
+tests/test_chaos
