@@ -65,6 +65,7 @@
 #define CODEC_FLAG_TIMEOUT             ((uint32_t)1)
 #define CODEC_LONG_TIMEOUT             ((uint32_t)(300))
 #define CODEC_VLONG_TIMEOUT            ((uint32_t)(1000))
+#define CODEC_MAX_RETRIES              ((uint32_t)5)
 
 
 

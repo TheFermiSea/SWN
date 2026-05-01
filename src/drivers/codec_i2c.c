@@ -234,10 +234,13 @@ uint32_t codec_write_register(uint8_t RegisterAddr, uint16_t RegisterValue)
 
 	HAL_StatusTypeDef 	err;
 
-	while((err = HAL_I2C_Master_Transmit(&codec_i2c2, CODEC_ADDRESS, data, 2, CODEC_VLONG_TIMEOUT)) != HAL_OK)
 	{
-		if (HAL_I2C_GetError(&codec_i2c2) != HAL_I2C_ERROR_AF)
-			return 2;
+		uint32_t retries = CODEC_MAX_RETRIES;
+		while(retries-- && (err = HAL_I2C_Master_Transmit(&codec_i2c2, CODEC_ADDRESS, data, 2, CODEC_VLONG_TIMEOUT)) != HAL_OK)
+		{
+			if (HAL_I2C_GetError(&codec_i2c2) != HAL_I2C_ERROR_AF)
+				return 2;
+		}
 	}
 
 	if (err==HAL_OK) 	return 0;

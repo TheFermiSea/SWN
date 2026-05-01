@@ -2,18 +2,14 @@
 #include <stdint.h>
 #include "LorenzAttractor.h"
 #include "RosslerAttractor.h"
-
-#define NUM_SWN_CHANNELS 6
-
-// Must match ChaosMode enum in chaos_interface.h
-#define CHAOS_MODE_LORENZ  1
-#define CHAOS_MODE_ROSSLER 2
+#include "globals.h"
+#include "chaos_interface.h"
 
 class ChaosModulator {
 private:
     LorenzAttractor lorenz[2];
     RosslerAttractor rossler[2];
-    float channel_mod[NUM_SWN_CHANNELS];
+    float channel_mod[NUM_CHANNELS];
 
 public:
     ChaosModulator() { resetAll(); }
@@ -22,7 +18,7 @@ public:
         float dt = 0.0001f + (speed_cv * 0.02f);
         float dt2 = dt * (1.0f + spread);
 
-        if (mode == CHAOS_MODE_LORENZ) {
+        if (mode == CHAOS_LORENZ) {
             lorenz[0].step(dt);
             lorenz[1].step(dt2);
             channel_mod[0] = lorenz[0].getNormX();
@@ -50,15 +46,17 @@ public:
         }
     }
 
-    void setCharacter(float normalized_character) {
+    void setCharacter(uint8_t mode, float normalized_character) {
         for (int i = 0; i < 2; i++) {
-            lorenz[i].setCharacter(normalized_character);
-            rossler[i].setCharacter(normalized_character);
+            if (mode == CHAOS_LORENZ)
+                lorenz[i].setCharacter(normalized_character);
+            else
+                rossler[i].setCharacter(normalized_character);
         }
     }
 
     float getModulation(int channel) {
-        if (channel < 0 || channel >= NUM_SWN_CHANNELS) return 0.0f;
+        if (channel < 0 || channel >= NUM_CHANNELS) return 0.0f;
         return channel_mod[channel];
     }
 };

@@ -249,7 +249,7 @@ TEST(rossler_stable_at_extreme_character) {
 
 TEST(modulator_lorenz_produces_valid_output) {
     ChaosModulator cm;
-    cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+    cm.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
     for (int i = 0; i < 6; i++) {
         float v = cm.getModulation(i);
         ASSERT(is_finite(v));
@@ -259,7 +259,7 @@ TEST(modulator_lorenz_produces_valid_output) {
 
 TEST(modulator_rossler_produces_valid_output) {
     ChaosModulator cm;
-    cm.processBlock(CHAOS_MODE_ROSSLER, 0.5f, 0.0f);
+    cm.processBlock(CHAOS_ROSSLER, 0.5f, 0.0f);
     for (int i = 0; i < 6; i++) {
         float v = cm.getModulation(i);
         ASSERT(is_finite(v));
@@ -269,7 +269,7 @@ TEST(modulator_rossler_produces_valid_output) {
 
 TEST(modulator_out_of_bounds_channel_returns_zero) {
     ChaosModulator cm;
-    cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+    cm.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
     ASSERT_NEAR(cm.getModulation(-1), 0.0f, 1e-6f);
     ASSERT_NEAR(cm.getModulation(6), 0.0f, 1e-6f);
     ASSERT_NEAR(cm.getModulation(99), 0.0f, 1e-6f);
@@ -277,11 +277,11 @@ TEST(modulator_out_of_bounds_channel_returns_zero) {
 
 TEST(modulator_reset_produces_consistent_state) {
     ChaosModulator cm, cm2;
-    cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
-    cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+    cm.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
+    cm.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
     cm.resetAll();
-    cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
-    cm2.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+    cm.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
+    cm2.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
 
     for (int i = 0; i < 6; i++) {
         ASSERT_NEAR(cm.getModulation(i), cm2.getModulation(i), 1e-6f);
@@ -292,10 +292,10 @@ TEST(modulator_spread_differentiates_instances) {
     ChaosModulator cm1, cm2;
 
     for (int i = 0; i < 100; i++)
-        cm1.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+        cm1.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
 
     for (int i = 0; i < 100; i++)
-        cm2.processBlock(CHAOS_MODE_LORENZ, 0.5f, 1.0f);
+        cm2.processBlock(CHAOS_LORENZ, 0.5f, 1.0f);
 
     bool any_different = false;
     for (int i = 3; i < 6; i++) {
@@ -309,12 +309,12 @@ TEST(modulator_spread_differentiates_instances) {
 
 TEST(modulator_character_changes_behavior) {
     ChaosModulator cm1, cm2;
-    cm1.setCharacter(0.0f);
-    cm2.setCharacter(1.0f);
+    cm1.setCharacter(CHAOS_LORENZ, 0.0f);
+    cm2.setCharacter(CHAOS_LORENZ, 1.0f);
 
     for (int i = 0; i < 5000; i++) {
-        cm1.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
-        cm2.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+        cm1.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
+        cm2.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
     }
 
     for (int i = 0; i < 6; i++) {
@@ -327,9 +327,9 @@ TEST(modulator_character_changes_behavior) {
 
 TEST(modulator_long_run_stability_lorenz) {
     ChaosModulator cm;
-    cm.setCharacter(0.7f);
+    cm.setCharacter(CHAOS_LORENZ, 0.7f);
     for (int i = 0; i < 600000; i++) {
-        cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.3f);
+        cm.processBlock(CHAOS_LORENZ, 0.5f, 0.3f);
     }
     for (int i = 0; i < 6; i++) {
         float v = cm.getModulation(i);
@@ -340,9 +340,9 @@ TEST(modulator_long_run_stability_lorenz) {
 
 TEST(modulator_long_run_stability_rossler) {
     ChaosModulator cm;
-    cm.setCharacter(0.7f);
+    cm.setCharacter(CHAOS_ROSSLER, 0.7f);
     for (int i = 0; i < 600000; i++) {
-        cm.processBlock(CHAOS_MODE_ROSSLER, 0.5f, 0.3f);
+        cm.processBlock(CHAOS_ROSSLER, 0.5f, 0.3f);
     }
     for (int i = 0; i < 6; i++) {
         float v = cm.getModulation(i);
@@ -353,7 +353,7 @@ TEST(modulator_long_run_stability_rossler) {
 
 TEST(modulator_speed_zero) {
     ChaosModulator cm;
-    cm.processBlock(CHAOS_MODE_LORENZ, 0.0f, 0.0f);
+    cm.processBlock(CHAOS_LORENZ, 0.0f, 0.0f);
     for (int i = 0; i < 6; i++) {
         ASSERT(is_finite(cm.getModulation(i)));
     }
@@ -362,7 +362,7 @@ TEST(modulator_speed_zero) {
 TEST(modulator_speed_max) {
     ChaosModulator cm;
     for (int i = 0; i < 1000; i++) {
-        cm.processBlock(CHAOS_MODE_LORENZ, 1.0f, 0.0f);
+        cm.processBlock(CHAOS_LORENZ, 1.0f, 0.0f);
     }
     for (int i = 0; i < 6; i++) {
         ASSERT(is_finite(cm.getModulation(i)));
@@ -373,7 +373,7 @@ TEST(modulator_speed_max) {
 TEST(modulator_freeze_holds_values) {
     ChaosModulator cm;
     for (int i = 0; i < 100; i++)
-        cm.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
+        cm.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
 
     float frozen_vals[6];
     for (int i = 0; i < 6; i++)
@@ -389,8 +389,8 @@ TEST(modulator_mode_only_steps_active_type) {
 
     // Run cm1 in Lorenz mode, cm2 in Rossler mode with same params
     for (int i = 0; i < 100; i++) {
-        cm1.processBlock(CHAOS_MODE_LORENZ, 0.5f, 0.0f);
-        cm2.processBlock(CHAOS_MODE_ROSSLER, 0.5f, 0.0f);
+        cm1.processBlock(CHAOS_LORENZ, 0.5f, 0.0f);
+        cm2.processBlock(CHAOS_ROSSLER, 0.5f, 0.0f);
     }
 
     // Both should produce valid output

@@ -40,20 +40,15 @@ void override_chaos_leds(void) {
     // Flash inner ring on mode change
     if (mode_change_flash > 0) {
         mode_change_flash--;
-        uint8_t flash_color = ledc_OFF;
-        if (mode == CHAOS_LORENZ)      flash_color = ledc_PURPLE;
-        else if (mode == CHAOS_ROSSLER) flash_color = ledc_GOLD;
-
         for (int i = 0; i < NUM_LED_INRING; i++) {
-            set_rgb_color(&led_cont.inring[i], flash_color);
+            set_rgb_color(&led_cont.inring[i], mode_color);
         }
     }
     // Persistent mode indicator
     else if (mode != CHAOS_OFF) {
         if (chaos_is_frozen()) {
             // Breathing animation while frozen (triangle wave via _FOLD_F)
-            freeze_breath_phase += CHAOS_BREATH_RATE;
-            if (freeze_breath_phase > 2.0f) freeze_breath_phase -= 2.0f;
+            freeze_breath_phase = _WRAP_F(freeze_breath_phase + CHAOS_BREATH_RATE, 0.0f, 2.0f);
             float brightness = CHAOS_BREATH_MIN + _FOLD_F(freeze_breath_phase, 1.0f) * CHAOS_BREATH_RANGE;
 
             for (int i = 0; i < NUM_LED_INRING; i++) {

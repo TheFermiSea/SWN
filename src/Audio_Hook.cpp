@@ -9,11 +9,9 @@ extern "C" {
 #include "envout_pwm.h"
 #include "ui_modes.h"
 #include "gpio_pins.h"
+#include "math_util.h"
 #include "chaos_interface.h"
 }
-
-static_assert(NUM_CHANNELS == NUM_SWN_CHANNELS,
-    "NUM_CHANNELS and NUM_SWN_CHANNELS must match for chaos modulation routing");
 
 ChaosModulator chaosManager;
 volatile uint8_t current_chaos_mode = CHAOS_OFF;
@@ -40,9 +38,7 @@ static volatile uint16_t chaos_speed_display_timer = 0;
 static void adjust_param(float *param, int16_t encoder_turn, uint8_t fine,
                           float inc_fine, float inc_coarse) {
     float inc = fine ? inc_fine : inc_coarse;
-    *param += encoder_turn * inc;
-    if (*param < 0.0f) *param = 0.0f;
-    if (*param > 1.0f) *param = 1.0f;
+    *param = _CLAMP_F(*param + encoder_turn * inc, 0.0f, 1.0f);
 }
 
 extern "C" {
@@ -58,7 +54,7 @@ void chaos_adjust_speed(int16_t encoder_turn, uint8_t fine) {
 
 void chaos_adjust_character(int16_t encoder_turn, uint8_t fine) {
     adjust_param(&chaos_character, encoder_turn, fine, 0.005f, 0.03f);
-    chaosManager.setCharacter(chaos_character);
+    chaosManager.setCharacter(current_chaos_mode, chaos_character);
 }
 
 void chaos_adjust_spread(int16_t encoder_turn, uint8_t fine) {
@@ -89,14 +85,10 @@ uint8_t process_chaos_lfos(void) {
     uint8_t chaos_active = (mode != CHAOS_OFF) && !UIMODE_IS_WT_RECORDING_EDITING(ui_mode);
 
     // Manage fade-in/fade-out for smooth transitions
-    if (chaos_active && chaos_xfade < 1.0f) {
-        chaos_xfade += 0.01f;
-        if (chaos_xfade > 1.0f) chaos_xfade = 1.0f;
-    }
-    if (!chaos_active && chaos_xfade > 0.0f) {
-        chaos_xfade -= 0.01f;
-        if (chaos_xfade < 0.0f) chaos_xfade = 0.0f;
-    }
+    if (chaos_active && chaos_xfade < 1.0f)
+        chaos_xfade = _CLAMP_F(chaos_xfade + 0.01f, 0.0f, 1.0f);
+    if (!chaos_active && chaos_xfade > 0.0f)
+        chaos_xfade = _CLAMP_F(chaos_xfade - 0.01f, 0.0f, 1.0f);
 
     if (chaos_xfade <= 0.0f) return 0;
 
@@ -115,8 +107,7 @@ uint8_t process_chaos_lfos(void) {
     // Step attractors (unless frozen)
     if (!chaos_frozen) {
         float speed_cv = (float)analog[LFO_CV].bracketed_val / 4095.0f;
-        float combined_speed = chaos_speed_enc + speed_cv;
-        if (combined_speed > 1.0f) combined_speed = 1.0f;
+        float combined_speed = _CLAMP_F(chaos_speed_enc + speed_cv, 0.0f, 1.0f);
 
         chaosManager.processBlock(mode, combined_speed, chaos_spread);
     }

@@ -36,6 +36,7 @@ I2C_HandleTypeDef pwmleddriver_i2c;
 DMA_HandleTypeDef pwmleddriver_dmatx;
 
 const uint32_t LEDDRIVER_LONG_TIMEOUT = (4000); //4000 = 500ms
+#define LEDDRIVER_MAX_RETRIES 5
 uint8_t g_num_driver_chips;
 uint8_t g_cur_chip_num = 0;
 uint8_t *leddriver_buffer_start[2];
@@ -148,10 +149,13 @@ enum LEDDriverErrors LEDDriver_set_single_LED(uint8_t led_element_number, uint16
 		data[3] = brightness & 0xFF; 						//off-time = brightness
 		data[4] = brightness >> 8;
 
-		while((err = HAL_I2C_Master_Transmit(&pwmleddriver_i2c, driver_addr, data, 5, LEDDRIVER_LONG_TIMEOUT)) != HAL_OK)
 		{
-			if (HAL_I2C_GetError(&pwmleddriver_i2c) != HAL_I2C_ERROR_AF)
-				return LEDDRIVER_SET_LED_ERR;
+			uint32_t retries = LEDDRIVER_MAX_RETRIES;
+			while(retries-- && (err = HAL_I2C_Master_Transmit(&pwmleddriver_i2c, driver_addr, data, 5, LEDDRIVER_LONG_TIMEOUT)) != HAL_OK)
+			{
+				if (HAL_I2C_GetError(&pwmleddriver_i2c) != HAL_I2C_ERROR_AF)
+					return LEDDRIVER_SET_LED_ERR;
+			}
 		}
 	}
 	else
@@ -202,10 +206,13 @@ enum LEDDriverErrors LEDDriver_setRGBLED_RGB(uint8_t led_number, uint16_t c_red,
 		data[11] = c_blue & 0xFF; 					//off-time = brightness
 		data[12] = c_blue >> 8;
 
-		while((err = HAL_I2C_Master_Transmit(&pwmleddriver_i2c, driverAddr, data, 13, LEDDRIVER_LONG_TIMEOUT)) != HAL_OK)
 		{
-			if (HAL_I2C_GetError(&pwmleddriver_i2c) != HAL_I2C_ERROR_AF)
-				return LEDDRIVER_SET_LED_ERR;
+			uint32_t retries = LEDDRIVER_MAX_RETRIES;
+			while(retries-- && (err = HAL_I2C_Master_Transmit(&pwmleddriver_i2c, driverAddr, data, 13, LEDDRIVER_LONG_TIMEOUT)) != HAL_OK)
+			{
+				if (HAL_I2C_GetError(&pwmleddriver_i2c) != HAL_I2C_ERROR_AF)
+					return LEDDRIVER_SET_LED_ERR;
+			}
 		}
 	} 
 	else
@@ -219,7 +226,7 @@ enum LEDDriverErrors LEDDriver_writeregister(uint8_t driverAddr, uint8_t Registe
 
 	//Assemble 2-byte data 
 	uint8_t data[2];
-	uint32_t timeout = LEDDRIVER_LONG_TIMEOUT;
+	uint32_t timeout = LEDDRIVER_MAX_RETRIES;
 	HAL_StatusTypeDef err;
 
 	data[0] = RegisterAddr;
